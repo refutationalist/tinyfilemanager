@@ -1,5 +1,5 @@
 #!/usr/bin/env php
-#<?php
+<?php
 
 
 // do we want to build a phar?
