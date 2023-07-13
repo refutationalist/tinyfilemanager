@@ -87,12 +87,12 @@ $newcode = '$external = (array) json_decode(<<<EndJSON'."\n".
 	"\nEndJSON\n);\n\n";
 
 $new_content = str_replace($ext_var, $newcode, $contents);
-file_put_contents($basedir."tinyfilemanager.php", $new_content);
+file_put_contents($basedir."index.php", $new_content);
 
 // Okay, are we gonna make a phar out of it?
 
 if ($build_phar) {
-	echo "Building phar...\n";
+	echo "[THIS DOESN'T WORK] Building phar...\n";
 
 	if (file_exists(pharfile)) bomb("phar already exists");
 
@@ -104,9 +104,7 @@ if ($build_phar) {
 	$phar->buildFromDirectory(__DIR__ . '/offline');
 
 
-	$stub = $phar->createDefaultStub("tinyfilemanager.php");
-	#$stub = "#!/usr/bin/php \n" . $stub;
-	$phar->setStub($stub);
+	$phar->setStub("<?php\nPhar::webPhar();\n__HALT_COMPILER();\n?>");
 
 	$phar->stopBuffering();
 	$phar->compressFiles(Phar::GZ);
