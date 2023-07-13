@@ -47,6 +47,8 @@ foreach ($external as $idx=>$html) {
 		$new[$idx] = sprintf('<link href="assets/%s" rel="stylesheet">', $base);
 
 
+		// this part is mainly for grabbing font awesome stuff.
+		// it is probably the weakest of all of this.
 		$css = file_get_contents($assetdir.$base);
 
 		preg_match_all("/url\((.*)\)/sU", $css, $m);
@@ -78,9 +80,6 @@ $newcode = '$external = (array) json_decode(<<<EndJSON'."\n".
 $new_content = str_replace($ext_var, $newcode, $contents);
 file_put_contents($basedir."tinyfilemanager.php", $new_content);
 
-
-// Fourth, we know we use FontAwesome, so let's just grab it
-// rather than parsing CSS
 
 // helper funcs
 
