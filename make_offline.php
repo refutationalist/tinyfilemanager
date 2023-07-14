@@ -14,20 +14,16 @@ if (is_dir("offline")) bomb("offline directory already exists");
 $basedir = "offline/";
 $assetdir = $basedir . "assets/";
 
+// highlightJS stuff
+$hjs_types = [ 'vs', 'ir-black' ];
+$highlightjs_style = '{BLANK}';
+
 
 // First, let's see if we can find what we're looking for.
 
 
 $contents = file_get_contents("tinyfilemanager.php");
 
-// find highlight_js_style
-if (preg_match("/(\\\$highlightjs_style =.*;)/sU", $contents, $h)) {
-	eval($h[1]);
-
-	if (!isset($highlightjs_style)) bomb("couldn't eval \$highlightjs_style");
-} else {
-	bomb("couldn't find \$highlightjs_style");
-}
 
 // find the external array
 if (preg_match("/(\\\$external = .*;)/sU", $contents, $m, PREG_OFFSET_CAPTURE)) {
@@ -51,23 +47,35 @@ foreach ($external as $idx=>$html) {
 	if (preg_match("/^css/", $idx)) {
 		// is css
 		if (!preg_match("/href=\"(.*)\"/U", $html, $h)) bomb("couldn't find css href");
-		$base = bring_asset($h[1]);
-		$new[$idx] = sprintf('<link href="assets/%s" rel="stylesheet">', $base);
+
+		if ($idx == 'css-highlightjs') {
+			// manage the two types of highlightjs
+			foreach ($hjs_types as $type) {
+				bring_asset(str_replace('{BLANK}', $type, $h[1]));
+			}
+			$new[$idx] = sprintf('<link href="assets/%s" rel="stylesheet">', basename($h[1]));
 
 
-		// this part is mainly for grabbing font awesome stuff.
-		// it is probably the weakest of all of this.
-		$css = file_get_contents($assetdir.$base);
+		} else {
+			// other files
+			$base = bring_asset($h[1]);
+			$new[$idx] = sprintf('<link href="assets/%s" rel="stylesheet">', $base);
 
-		preg_match_all("/url\((.*)\)/sU", $css, $m);
-		foreach ($m[1] as $match) {
-			$clean = strtok(str_replace(['"', "'"], "", $match), '?');
-			if (preg_match("/^data/", $clean)) continue;
-			$exturl = dirname($h[1]).'/'.$clean;
-			$css = str_replace($match, bring_asset($exturl), $css);
+
+			// this part is mainly for grabbing font awesome stuff.
+			// it is probably the weakest of all of this.
+			$css = file_get_contents($assetdir.$base);
+
+			preg_match_all("/url\((.*)\)/sU", $css, $m);
+			foreach ($m[1] as $match) {
+				$clean = strtok(str_replace(['"', "'"], "", $match), '?');
+				if (preg_match("/^data/", $clean)) continue;
+				$exturl = dirname($h[1]).'/'.$clean;
+				$css = str_replace($match, bring_asset($exturl), $css);
+			}
+
+			file_put_contents($assetdir.$base, $css);
 		}
-
-		file_put_contents($assetdir.$base, $css);
 
 	} else if (preg_match("/^js/", $idx)) {
 		// is js
@@ -84,7 +92,8 @@ foreach ($external as $idx=>$html) {
 // Third, make a new version of the main file with the new stuff in it
 $newcode = '$external = (array) json_decode(<<<EndJSON'."\n".
 	json_encode($new, JSON_PRETTY_PRINT).
-	"\nEndJSON\n);\n\n";
+	"\nEndJSON\n);\n\n".
+	'$external["css-highlightjs"] = str_replace("{BLANK}", $highlightjs_style, $external["css-highlightjs"]);'."\n\n";
 
 $new_content = str_replace($ext_var, $newcode, $contents);
 file_put_contents($basedir."index.php", $new_content);
